@@ -12,8 +12,18 @@ class Category(models.Model):
     def clean(self):
         self.name = self.name.capitalize()
 
+    def __str__(self) -> str:
+        return self.name
+
 class Article(models.Model):
+    class Units(models.TextChoices):
+        UNIT = ("UNITE", "UNITE")
+        KG = ("KG", "KG")
+        L= ("L", "L")
+        SAC = ("SAC", "SAC")
+        BIDOU = ("BIDOU", "BIDOU")
     name = models.CharField(_("Name"), max_length=50, unique=True)
+    unit = models.CharField(max_length=10, choices=Units.choices, default=Units.UNIT)
     base_price = models.FloatField(_("Base Price"))
     inventory_level = models.FloatField(_("Inventory Level"))
     inventory_security_level = models.FloatField(_("Inventory Security Level"), default=0)
@@ -21,6 +31,9 @@ class Article(models.Model):
 
     def clean(self):
         self.name = self.name.capitalize()
+
+    def __str__(self) -> str:
+        return self.name
 
 class Supplier(models.Model):
     # TODO: on save set name to uppercase to handle the unique constraint
@@ -33,6 +46,9 @@ class Supplier(models.Model):
 
     def clean(self):
         self.name = self.name.capitalize()
+
+    def __str__(self) -> str:
+        return self.name
 
 class Order(models.Model):
     # TODO: generate auto id if not exist

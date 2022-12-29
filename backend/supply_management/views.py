@@ -1,26 +1,39 @@
 from rest_framework.views import APIView
+from .models import Category, Article
 from .serializers import ArticleSerializer, CategorySerializer
 from rest_framework.response import Response
+from rest_framework import pagination
+from rest_framework import generics
 
-class CategoryViews(APIView):
-    def post(self, request):
-        '''Create new article'''
-        data = request.data
-        article_serializer = CategorySerializer(data=data)
-        if article_serializer.is_valid():
-            article_serializer.save()
-            return Response(article_serializer.data)
-        else:
-            return Response(article_serializer.errors, status=400)
+class MyPagination(pagination.PageNumberPagination):
+
+    def get_paginated_response(self, data):
+        return Response({
+            'links': {
+                'next': self.get_next_link(),
+                'previous': self.get_previous_link()
+            },
+            'count': self.page.paginator.count,
+            'total_pages': self.page.paginator.num_pages,
+            'results': data
+        })
 
 
-class ArticleViews(APIView):
-    def post(self, request):
-        '''Create new article'''
-        data = request.data
-        article_serializer = ArticleSerializer(data=data)
-        if article_serializer.is_valid():
-            article_serializer.save()
-            return Response(article_serializer.data)
-        else:
-            return Response(article_serializer.errors, status=400)
+class StandardResultsSetPagination(MyPagination):
+    page_size = 200
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+class CategoriesView(generics.ListAPIView):
+    queryset = Category.objects.all().order_by("-id")
+    serializer_class = CategorySerializer
+    pagination_class = StandardResultsSetPagination
+
+class ArticlesView(generics.ListAPIView):
+    queryset = Article.objects.select_related("category").all().order_by("-id")
+    serializer_class = ArticleSerializer
+    pagination_class = StandardResultsSetPagination
+    def get_queryset(self):
+        qs = super().get_queryset()
+        print(qs)
+        return qs

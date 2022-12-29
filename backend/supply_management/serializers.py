@@ -14,3 +14,4 @@ class ArticleSerializer(ModelSerializer):
     def to_representation(self, instance):
         obj = super().to_representation(instance)
         obj["category_name"] = instance.category.name
+        return obj
