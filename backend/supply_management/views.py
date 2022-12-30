@@ -29,11 +29,10 @@ class CategoriesView(generics.ListAPIView):
     serializer_class = CategorySerializer
     pagination_class = StandardResultsSetPagination
 
+    def get_queryset(self):
+        return super().get_queryset().order_by("id")
+
 class ArticlesView(generics.ListAPIView):
     queryset = Article.objects.select_related("category").all().order_by("-id")
     serializer_class = ArticleSerializer
     pagination_class = StandardResultsSetPagination
-    def get_queryset(self):
-        qs = super().get_queryset()
-        print(qs)
-        return qs

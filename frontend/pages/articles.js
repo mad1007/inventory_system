@@ -13,6 +13,7 @@ const Articles = () => {
   const {addMessage} = useMessages()
   
   const [articles, setArticles] = useState([])
+  const [categories, setCategories] = useState([])
   const [selectedArticle, setSelectedArticle] = useState()
   const [showModal, setShowModal] = useState(false)
 
@@ -20,8 +21,8 @@ const Articles = () => {
 
   const fetchArticles = async()=>{
     const response = await fetchWithCreds("/api/supply/articles/")
-    if(!response || response.status == 404){
-      return addMessage({type:"warning", msg:"Couldnt authenticate"})
+    if(!response || response.status == 404 || response.status == 500){
+      return addMessage({type:"warning", msg:"Somthing went wrong err_code : "+response.status})
     }
     if(response.status != 200){
       const errMsg = await response.json()
@@ -33,13 +34,33 @@ const Articles = () => {
     }
 
   }
+  const fetchCategories = async()=>{
+    const response = await fetchWithCreds("/api/supply/categories/")
+    if(!response || response.status == 404 || response.status == 500){
+      return addMessage({type:"warning", msg:"Somthing went wrong err_code : "+response.status})
+    }
+    if(response.status != 200){
+      const errMsg = await response.json()
+      return addMessage({type:"warning", msg:JSON.stringify(errMsg)})
+    }else{
+      const categories = await response.json()
+      setCategories(categories.results)
+      console.log('categories', categories)
+    }
 
+  }
+  const submitForm = async(e)=>{
+    e.preventDefault()
+    alert(JSON.stringify(selectedArticle))
+    console.log(selectedArticle)
+  }
   useEffect(() => { 
     const authenticate = async ()=>{
       if(!user){
         const auth = await checkAuth()
         if(auth){
-          await fetchArticles()
+          fetchArticles()
+          fetchCategories()
         }else{
           router.push('/login')
         }
@@ -75,20 +96,45 @@ const Articles = () => {
           <Modal.Title>{selectedArticle?.id ? "Modifier Un Produit" : "Nouveau Produit"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-        <Form.Group className="mb-3" controlId="productName" >
-            <Form.Label>Désignation</Form.Label>
-            <Form.Control required type="text" value={selectedArticle?.name} onChange={(e)=>setSelectedArticle((data)=>({...data, name:e.target.value}))} placeholder="Le nom de produit" />
-          </Form.Group>
+        <div className='row'>
+            <div className='col-sm-12 col-md-6'>
+              <Form.Group className="mb-3" controlId="productName" >
+                <Form.Label>Désignation</Form.Label>
+                <Form.Control required type="text" value={selectedArticle?.name} onChange={(e)=>setSelectedArticle((data)=>({...data, name:e.target.value}))} placeholder="Le nom de produit" />
+              </Form.Group>              
+            </div>
+            <div className='col-sm-12 col-md-6'>
+              <Form.Group className="mb-3" controlId="productPrice">
+                <Form.Label>Prix De Base</Form.Label>
+                <Form.Control required type="text" value={selectedArticle?.base_price} onChange={(e)=>setSelectedArticle((data)=>({...data, base_price:e.target.value}))}  placeholder="Describe your todo" />
+              </Form.Group>
+            </div>
+          </div>
           <Form.Group className="mb-3" controlId="productPrice">
-            <Form.Label>Prix De Base</Form.Label>
-            <Form.Control required type="text" value={selectedArticle?.price} onChange={(e)=>setSelectedArticle((data)=>({...data, price:e.target.value}))}  placeholder="Describe your todo" />
-          </Form.Group>
-          <Form.Group className="mb-3" controlId="todoDeadline">
-            <Form.Label>DeadLine</Form.Label>
-            <Form.Control type="datetime-local" value={selectedArticle?.deadline} onChange={(e)=>setSelectedArticle((data)=>({...data, deadline:e.target.value}))} placeholder="Enter a deadline" />
-          </Form.Group>
+                <Form.Label>TVA</Form.Label>
+                <Form.Control min={0} max={0.2} step={0.01} required type="number" value={selectedArticle?.tva} onChange={(e)=>setSelectedArticle((data)=>({...data, tva:e.target.value}))}  placeholder="Describe your todo" />
+              </Form.Group>
+
           <Form.Group className="mb-3" controlId="todoDone">
-            <Form.Check checked={selectedArticle?.done} type="checkbox" onChange={(e)=>setSelectedArticle((data)=>({...data, done:e.target.checked}))} label="Done" />
+            <Form.Label>Unité De Mésure</Form.Label>
+            <Form.Select  value={selectedArticle?.unit} onChange={(e)=>setSelectedArticle((data)=>({...data, unit:e.target.value}))} >
+              <option value="UNITE">Unité</option>
+              <option value="KG">KG</option>
+              <option value="G">G</option>
+              <option value="L">L</option>
+              <option value="SAC">SAC</option>
+              <option value="BOUTEILLE">BOUTEILLE</option>
+              <option value="CARTON">CARTON</option>
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="mb-3" controlId="todoDone">
+            <Form.Label>Categorie</Form.Label>
+            <Form.Select value={selectedArticle?.category} onChange={(e)=>setSelectedArticle((data)=>({...data, category:e.target.value}))}>
+              {categories.map(category=>(
+                <option key={category.id} >{category.name}</option>
+              ))}
+            </Form.Select>
           </Form.Group>
 
         </Modal.Body>
@@ -96,7 +142,7 @@ const Articles = () => {
           <Button variant="secondary" onClick={()=>setShowModal(false)}>
             Close
           </Button>
-          <Button variant="primary" type='submit'>
+          <Button variant="primary" type='submit' onClick={(e)=>submitForm(e)}>
             Save Changes
           </Button>
         </Modal.Footer>
